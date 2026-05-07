@@ -1,0 +1,17 @@
+{
+  "node": {
+    "4012fbb825410699756bc5307e1fb411333bdfad4d": {
+      "workers": {
+        "app/courses/[slug]/page": {
+          "moduleId": 69042,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "app/courses/[slug]/page.tsx"
+        }
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "app/courses/[slug]/page.tsx"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  LECTURER
+  STUDENT
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+model User {
+  id             String             @id @default(cuid())
+  name           String
+  email          String             @unique
+  passwordHash   String
+  role           Role               @default(STUDENT)
+  createdAt      DateTime           @default(now())
+  courses        Course[]           @relation("LecturerCourses")
+  enrollments    Enrollment[]
+  lessonProgress LessonProgress[]
+  discussions    DiscussionThread[]
+  replies        DiscussionReply[]
+  chats          ChatMessage[]
+}
+
+model Category {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  courses Course[]
+}
+
+model Course {
+  id          String             @id @default(cuid())
+  title       String
+  slug        String             @unique
+  description String
+  outcomes    String
+  level       Difficulty         @default(BEGINNER)
+  priceCents  Int                @default(0)
+  isPublished Boolean            @default(false)
+  thumbnail   String?
+  lecturerId  String
+  categoryId  String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  lecturer    User               @relation("LecturerCourses", fields: [lecturerId], references: [id])
+  category    Category           @relation(fields: [categoryId], references: [id])
+  sections    Section[]
+  enrollments Enrollment[]
+  resources   Resource[]
+  chunks      MaterialChunk[]
+  discussions DiscussionThread[]
+  chats       ChatMessage[]
+}
+
+model Section {
+  id       String   @id @default(cuid())
+  title    String
+  position Int
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+}
+
+model Lesson {
+  id        String           @id @default(cuid())
+  title     String
+  position  Int
+  videoUrl  String?
+  content   String
+  sectionId String
+  section   Section          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  resources Resource[]
+  progress  LessonProgress[]
+}
+
+model Resource {
+  id            String          @id @default(cuid())
+  title         String
+  fileName      String
+  filePath      String
+  mimeType      String
+  allowDownload Boolean         @default(true)
+  courseId      String
+  lessonId      String?
+  course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson        Lesson?         @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  chunks        MaterialChunk[]
+}
+
+model MaterialChunk {
+  id            String    @id @default(cuid())
+  courseId      String
+  resourceId    String?
+  lessonId      String?
+  sourceTitle   String
+  chunkIndex    Int
+  content       String
+  embeddingJson String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  resource      Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  enrolledAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model LessonProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  String
+  completed Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+}
+
+model DiscussionThread {
+  id        String            @id @default(cuid())
+  title     String
+  body      String
+  courseId  String
+  lessonId  String?
+  authorId  String
+  isLocked  Boolean           @default(false)
+  createdAt DateTime          @default(now())
+  course    Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author    User              @relation(fields: [authorId], references: [id])
+  replies   DiscussionReply[]
+}
+
+model DiscussionReply {
+  id        String           @id @default(cuid())
+  body      String
+  threadId  String
+  authorId  String
+  createdAt DateTime         @default(now())
+  thread    DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author    User             @relation(fields: [authorId], references: [id])
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  role        String
+  content     String
+  sourcesJson String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
